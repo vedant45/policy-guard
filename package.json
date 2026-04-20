@@ -8,7 +8,9 @@
   "delegate": "ts-node src/cli.ts delegate",
   "delegate:dry": "ts-node src/cli.ts delegate --dry-run",
   "build": "tsc",
-  "start": "node dist/cli.js audit"
+  "start": "node dist/cli.js audit",
+  "pre-delegate": "ts-node src/cli.ts pre-delegate",
+  "pre-delegate:dry": "ts-node src/cli.ts pre-delegate --dry-run"
 },
   "keywords": [],
   "author": "",

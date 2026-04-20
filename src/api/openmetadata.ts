@@ -140,3 +140,12 @@ export async function createGroupTeam(name: string) {
 }
 
 
+export async function getUserById(userId: string) {
+  const client = await getClient();
+  try {
+    const res = await client.get(`/users/${userId}?include=all`);
+    return res.data;
+  } catch (e) {
+    return null;
+  }
+}
