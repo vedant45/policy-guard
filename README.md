@@ -2,7 +2,7 @@
 
 > Enterprise-grade governance auditor for OpenMetadata 
 
-PolicyGuard brings IAM governance concepts (SOD policies, access certifications, ownership delegation) to data asset management in OpenMetadata.
+AccessRakshak brings IAM governance concepts (SOD policies, access certifications, ownership delegation) to data asset management in OpenMetadata.
 
 ## 🎯 Problem
 
@@ -30,7 +30,7 @@ npm run certify
 ## 📊 Demo
 
 ```
-🔍 PolicyGuard - OpenMetadata Governance Auditor
+🔍 AccessRakshak - OpenMetadata Governance Auditor
 
 🔴 [HIGH] Glossary: FinanceGlossary
    ❗ Issue: Glossary is only owned by admin. Single point of failure.
