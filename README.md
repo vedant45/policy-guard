@@ -1,4 +1,4 @@
-# 🛡️ PolicyGuard
+# 🛡️ AccessRakshak
 
 > Enterprise-grade governance auditor for OpenMetadata 
 
