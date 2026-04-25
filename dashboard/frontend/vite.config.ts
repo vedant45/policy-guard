@@ -6,9 +6,9 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      '/api': 'http://localhost:8080',
+      '/api': 'wss://sentari.onrender.com',
       '/ws': {
-        target: 'ws://localhost:8080',
+        target: 'wss://sentari.onrender.com',
         ws: true,
       }
     }
