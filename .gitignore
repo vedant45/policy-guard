@@ -3,3 +3,8 @@ dist/
 .env
 docker-volume/
 *.log
+
+cloudflared.exe
+.env
+node_modules/
+dist/
