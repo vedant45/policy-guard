@@ -12,7 +12,14 @@ console.log("🔍 OM URL:", process.env.OPENMETADATA_URL);
 console.log("🔍 OM USER:", process.env.OPENMETADATA_USER);
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://sentari.vercel.app",
+    /\.vercel\.app$/
+  ],
+  credentials: true,
+}))
 app.use(express.json());
 
 const PORT = 8080;
