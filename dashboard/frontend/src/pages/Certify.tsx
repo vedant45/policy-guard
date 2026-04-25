@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import axios from "axios";
+
 import Terminal from "../components/Terminal";
 import { getApi } from "../api";
 export default function Certify() {
@@ -17,11 +17,9 @@ export default function Certify() {
     };
   useEffect(() => { fetchCerts(); }, []);
 
-  const certify = async (assetId: string, assetType: string) => {
-    await axios.post(`/api/certify/${assetId}`,
-      { assetType },
-      { headers: { Authorization: `Bearer ${token}` }}
-    );
+    const certify = async (assetId: string, assetType: string) => {
+    const api = getApi(token!);
+    await api.post(`/api/certify/${assetId}`, { assetType });
     fetchCerts();
   };
 

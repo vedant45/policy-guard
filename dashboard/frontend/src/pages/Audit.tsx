@@ -1,7 +1,9 @@
 import { useState } from "react";
 import Terminal from "../components/Terminal";
 import { useAuth } from "../context/AuthContext";
-import axios from "axios";
+
+
+import { getApi } from "../api";
 
 export default function Audit() {
   const { token } = useAuth();
@@ -10,9 +12,8 @@ export default function Audit() {
 
   const runAudit = async () => {
     setCommand(`audit-${Date.now()}`);
-    const res = await axios.get("/api/findings", {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const api = getApi(token!);
+    const res = await api.get("/api/findings");
     setFindings(res.data);
   };
 

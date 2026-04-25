@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import axios from "axios";
+
 import Terminal from "../components/Terminal";
 import { getApi } from "../api";
 

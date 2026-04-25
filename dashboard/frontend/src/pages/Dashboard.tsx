@@ -881,13 +881,13 @@ export default function Dashboard() {
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
   useEffect(() => {
-    const headers = { Authorization: `Bearer ${token}` };
-    Promise.all([
-      axios.get("/api/stats", { headers }),
-      axios.get("/api/findings", { headers }),
-      axios.get("/api/certifications", { headers }),
-      axios.get("/api/score", { headers }),
-    ]).then(([s, f, c, sc]) => {
+      const api = getApi(token!);
+  Promise.all([
+    api.get("/api/stats"),
+    api.get("/api/findings"),
+    api.get("/api/certifications"),
+    api.get("/api/score"),
+  ]).then(([s, f, c, sc]) => {
       setStats(s.data);
       setFindings(Array.isArray(f.data) ? f.data : []);
       setCerts(Array.isArray(c.data) ? c.data : []);
