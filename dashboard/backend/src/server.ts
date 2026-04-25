@@ -12,18 +12,36 @@ console.log("🔍 OM URL:", process.env.OPENMETADATA_URL);
 console.log("🔍 OM USER:", process.env.OPENMETADATA_USER);
 
 const app = express();
+
 app.use(cors({
   origin: [
-    "http://localhost:5173",
     "https://sentari.vercel.app",
-    /\.vercel\.app$/
+    "http://localhost:3000",
+    "http://localhost:5173",
   ],
   credentials: true,
-}))
+}));
 app.use(express.json());
 
-const PORT = 8080;
+const PORT = parseInt(process.env.PORT || "8080");
 const OM_URL = process.env.OPENMETADATA_URL || "http://localhost:8585";
+
+// ─── SHARED HEADERS ──────────────────────────────────────────
+const CF_HEADERS = {
+  "ngrok-skip-browser-warning": "true",
+  "User-Agent": "PolicyGuard/1.0",
+  "CF-Access-Client-Id": "bypass",
+};
+
+function getClient(token?: string) {
+  return axios.create({
+    baseURL: `${OM_URL}/api/v1`,
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...CF_HEADERS,
+    },
+  });
+}
 
 // ─── AUTH ────────────────────────────────────────────────────
 app.post("/api/login", async (req, res) => {
@@ -33,9 +51,12 @@ app.post("/api/login", async (req, res) => {
     const response = await axios.post(`${OM_URL}/api/v1/users/login`, {
       email,
       password: encoded,
+    }, {
+      headers: { ...CF_HEADERS },
     });
     res.json({ token: response.data.accessToken, success: true });
   } catch (err: any) {
+    console.error("Login error:", err.message);
     res.status(401).json({ success: false, message: "Invalid credentials" });
   }
 });
@@ -47,10 +68,7 @@ app.get("/api/stats", async (req, res) => {
     console.log("Stats token:", token ? token.substring(0, 20) + "..." : "MISSING");
     if (!token) return res.status(401).json({ error: "No token provided" });
 
-    const client = axios.create({
-      baseURL: `${OM_URL}/api/v1`,
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const client = getClient(token);
 
     const [policies, roles, glossaries, users, teams] = await Promise.all([
       client.get("/policies?limit=50"),
@@ -78,10 +96,7 @@ app.get("/api/stats", async (req, res) => {
 app.get("/api/findings", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
-    const client = axios.create({
-      baseURL: `${OM_URL}/api/v1`,
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const client = getClient(token);
 
     const [policiesRes, glossariesRes] = await Promise.all([
       client.get("/policies?limit=50"),
@@ -138,10 +153,7 @@ app.get("/api/findings", async (req, res) => {
 app.get("/api/certifications", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
-    const client = axios.create({
-      baseURL: `${OM_URL}/api/v1`,
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const client = getClient(token);
 
     const glossariesRes = await client.get("/glossaries?limit=50&fields=owners,tags");
     const glossaries = glossariesRes.data.data;
@@ -184,10 +196,7 @@ app.post("/api/certify/:assetId", async (req, res) => {
     const { assetId } = req.params;
     const { assetType } = req.body;
 
-    const client = axios.create({
-      baseURL: `${OM_URL}/api/v1`,
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const client = getClient(token);
 
     const certifiedOn = new Date().toISOString();
     const validUntil = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
@@ -201,7 +210,7 @@ app.post("/api/certify/:assetId", async (req, res) => {
     await client.patch(
       `/${entityPath}/${assetId}`,
       [{ op: "add", path: "/description", value: currentDesc + certMeta }],
-      { headers: { "Content-Type": "application/json-patch+json" }}
+      { headers: { "Content-Type": "application/json-patch+json", ...CF_HEADERS }}
     );
 
     res.json({ success: true, certifiedOn, validUntil });
@@ -215,10 +224,7 @@ app.post("/api/certify/:assetId", async (req, res) => {
 app.get("/api/score", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
-    const client = axios.create({
-      baseURL: `${OM_URL}/api/v1`,
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const client = getClient(token);
 
     const [policiesRes, glossariesRes, teamsRes] = await Promise.all([
       client.get("/policies?limit=50"),
@@ -259,10 +265,7 @@ app.get("/api/score", async (req, res) => {
 app.get("/api/classifications", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
-    const client = axios.create({
-      baseURL: `${OM_URL}/api/v1`,
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const client = getClient(token);
 
     const tablesRes = await client.get("/tables?limit=50&fields=columns,owners,tags&include=all");
     const tables = tablesRes.data.data;
@@ -298,10 +301,52 @@ app.get("/api/classifications", async (req, res) => {
   }
 });
 
+// ─── POLICIES LIST ───────────────────────────────────────────
+app.get("/api/policies", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(401).json({ error: "No token" });
+    const client = getClient(token);
+    const res2 = await client.get("/policies?limit=50");
+    res.json(res2.data.data);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── ROLES LIST ──────────────────────────────────────────────
+app.get("/api/roles", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(401).json({ error: "No token" });
+    const client = getClient(token);
+    const res2 = await client.get("/roles?limit=50");
+    res.json(res2.data.data);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── GLOSSARIES LIST ─────────────────────────────────────────
+app.get("/api/glossaries", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(401).json({ error: "No token" });
+    const client = getClient(token);
+    const res2 = await client.get("/glossaries?limit=50&fields=owners,tags");
+    res.json(res2.data.data);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── HTTP SERVER ─────────────────────────────────────────────
 const server = app.listen(PORT, () => {
   console.log(`\n🛡️  Sentari Backend running on http://localhost:${PORT}\n`);
 });
+
+server.keepAliveTimeout = 120000;
+server.headersTimeout = 120000;
 
 // ─── WEBSOCKET FOR TERMINAL ───────────────────────────────────
 const wss = new WebSocketServer({ server });
@@ -345,54 +390,4 @@ wss.on("connection", (ws: WebSocket) => {
       ws.send(JSON.stringify({ type: "done", data: `\nProcess exited with code ${code}\n` }));
     });
   });
-});
-
-
-
-// ─── POLICIES LIST ───────────────────────────────────────────
-app.get("/api/policies", async (req, res) => {
-  try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(401).json({ error: "No token" });
-    const client = axios.create({
-      baseURL: `${OM_URL}/api/v1`,
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const res2 = await client.get("/policies?limit=50");
-    res.json(res2.data.data);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ─── ROLES LIST ──────────────────────────────────────────────
-app.get("/api/roles", async (req, res) => {
-  try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(401).json({ error: "No token" });
-    const client = axios.create({
-      baseURL: `${OM_URL}/api/v1`,
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const res2 = await client.get("/roles?limit=50");
-    res.json(res2.data.data);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ─── GLOSSARIES LIST ─────────────────────────────────────────
-app.get("/api/glossaries", async (req, res) => {
-  try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(401).json({ error: "No token" });
-    const client = axios.create({
-      baseURL: `${OM_URL}/api/v1`,
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const res2 = await client.get("/glossaries?limit=50&fields=owners,tags");
-    res.json(res2.data.data);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
 });
