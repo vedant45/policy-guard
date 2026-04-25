@@ -348,6 +348,53 @@ const server = app.listen(PORT, () => {
 server.keepAliveTimeout = 120000;
 server.headersTimeout = 120000;
 
+// // ─── WEBSOCKET FOR TERMINAL ───────────────────────────────────
+// const wss = new WebSocketServer({ server });
+
+// wss.on("connection", (ws: WebSocket) => {
+//   console.log("Terminal client connected");
+
+//   ws.on("message", (message: string) => {
+//     const { command } = JSON.parse(message.toString());
+//     const cliPath = path.join(__dirname, "../../../");
+
+//     const isDryRun = command.includes("dry");
+//     const baseCommand = command
+//       .replace(/-dry-\d+$/, "")
+//       .replace(/-\d+$/, "");
+
+//     const validCommands = ["audit", "certify", "delegate", "pre-delegate", "classify"];
+
+//     if (!validCommands.includes(baseCommand)) {
+//       ws.send(JSON.stringify({ type: "error", data: "Invalid command\n" }));
+//       return;
+//     }
+
+//     const args = ["ts-node", "src/cli.ts", baseCommand];
+//     if (isDryRun) args.push("--report-only");
+
+//     const proc = spawn("npx", args, {
+//       cwd: cliPath,
+//       shell: true,
+//     });
+
+//     proc.stdout.on("data", (data: Buffer) => {
+//       ws.send(JSON.stringify({ type: "stdout", data: data.toString() }));
+//     });
+
+//     proc.stderr.on("data", (data: Buffer) => {
+//       ws.send(JSON.stringify({ type: "stderr", data: data.toString() }));
+//     });
+
+//     proc.on("close", (code: number) => {
+//       ws.send(JSON.stringify({ type: "done", data: `\nProcess exited with code ${code}\n` }));
+//     });
+//   });
+// });
+
+
+
+
 // ─── WEBSOCKET FOR TERMINAL ───────────────────────────────────
 const wss = new WebSocketServer({ server });
 
@@ -356,7 +403,8 @@ wss.on("connection", (ws: WebSocket) => {
 
   ws.on("message", (message: string) => {
     const { command } = JSON.parse(message.toString());
-    const cliPath = path.join(__dirname, "../../../");
+
+    const cliPath = path.resolve(__dirname, "../../../");
 
     const isDryRun = command.includes("dry");
     const baseCommand = command
@@ -370,12 +418,16 @@ wss.on("connection", (ws: WebSocket) => {
       return;
     }
 
-    const args = ["ts-node", "src/cli.ts", baseCommand];
-    if (isDryRun) args.push("--report-only");
+    const args = ["-r", "ts-node/register", "src/cli.ts", baseCommand];
 
-    const proc = spawn("npx", args, {
+    if (isDryRun) {
+      args.push("--report-only");
+    }
+
+    const proc = spawn("node", args, {
       cwd: cliPath,
       shell: true,
+      env: process.env,
     });
 
     proc.stdout.on("data", (data: Buffer) => {
