@@ -880,21 +880,26 @@ export default function Dashboard() {
   // Hover state for clickable cards
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
-  useEffect(() => {
-      const api = getApi(token!);
-  Promise.all([
-    api.get("/api/stats"),
-    api.get("/api/findings"),
-    api.get("/api/certifications"),
-    api.get("/api/score"),
-  ]).then(([s, f, c, sc]) => {
-      setStats(s.data);
-      setFindings(Array.isArray(f.data) ? f.data : []);
-      setCerts(Array.isArray(c.data) ? c.data : []);
-      setScore(sc.data);
-    }).catch(err => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [token]);
+      useEffect(() => {
+      if (!token) return;
+
+      const api = getApi(token);
+
+      Promise.all([
+        api.get("/api/stats"),
+        api.get("/api/findings"),
+        api.get("/api/certifications"),
+        api.get("/api/score"),
+      ])
+        .then(([s, f, c, sc]) => {
+          setStats(s.data);
+          setFindings(Array.isArray(f.data) ? f.data : []);
+          setCerts(Array.isArray(c.data) ? c.data : []);
+          setScore(sc.data);
+        })
+        .catch((err) => setError(err.message))
+        .finally(() => setLoading(false));
+    }, [token]);
 
   const openModal = async (type: ModalType) => {
     setModal({ type, data: [], loading: true });
