@@ -1,5 +1,7 @@
 import { createContext, useContext, useState } from "react";
 import type { ReactNode } from "react";
+import axios from "axios";
+axios.defaults.headers.common['ngrok-skip-browser-warning'] = 'true';
 
 interface AuthContextType {
   token: string | null;

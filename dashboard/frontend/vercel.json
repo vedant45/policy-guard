@@ -7,6 +7,21 @@
     {
       "source": "/(.*)",
       "destination": "/index.html"
+    },
+    {
+      "source": "/ws",
+      "destination": "https://chump-kangaroo-blast.ngrok-free.dev/ws"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "ngrok-skip-browser-warning",
+          "value": "true"
+        }
+      ]
     }
   ]
 }

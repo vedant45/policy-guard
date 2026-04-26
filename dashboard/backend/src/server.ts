@@ -6,6 +6,7 @@ import axios from "axios";
 import * as dotenv from "dotenv";
 import * as path from "path";
 
+
 dotenv.config({ path: "C:\\PolicyGuard\\policy-guard\\.env" });
 
 console.log("🔍 OM URL:", process.env.OPENMETADATA_URL);
