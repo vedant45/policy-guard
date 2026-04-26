@@ -3,6 +3,14 @@
 
 Sentari brings IAM governance concepts (SOD policies, access certifications, ownership delegation) to data asset management in OpenMetadata.
 
+> [!IMPORTANT]
+> **Sentari requires 3 services running on your machine to work:**
+> - **OpenMetadata** — the metadata platform (runs via Docker)
+> - **Cloudflare Tunnel** — exposes OpenMetadata publicly so Sentari can connect
+> - **ngrok** — exposes the Sentari backend publicly so the frontend can connect
+>
+> Without all three running, the app will not function.
+
 ## 🎯 Problem
 
 OpenMetadata's governance policies silently fail in real-world scenarios:
@@ -39,11 +47,15 @@ npm run certify     →  Certify ownership is valid
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) v18+
-- [Docker & Docker Compose](https://docs.docker.com/get-docker/)
-- A running OpenMetadata instance (local or cloud)
-- [ngrok](https://ngrok.com/download) — if tunneling a local backend
-- [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/) — optional, for a stable public URL
+Before running Sentari, you need all three of these services set up:
+
+| Service | Purpose | Link |
+|---|---|---|
+| **Node.js v18+** | Run the backend | [nodejs.org](https://nodejs.org/) |
+| **Docker & Docker Compose** | Run OpenMetadata locally | [docs.docker.com](https://docs.docker.com/get-docker/) |
+| **OpenMetadata** | Metadata platform Sentari connects to | Runs via Docker below |
+| **Cloudflare Tunnel** | Expose OpenMetadata to Sentari frontend | [cloudflare.com](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/) |
+| **ngrok** | Expose Sentari backend to Vercel frontend | [ngrok.com](https://ngrok.com/download) |
 
 ---
 
@@ -59,8 +71,6 @@ npm install
 
 ### Step 2 — Start OpenMetadata via Docker
 
-If you don't have an OpenMetadata instance running yet:
-
 ```bash
 docker compose up -d
 ```
@@ -70,29 +80,53 @@ Default credentials: `admin / admin`
 
 ---
 
-### Step 3 — Configure Environment Variables
-Use the env file given
+### Step 3 — Start Cloudflare Tunnel
+
+Sentari needs OpenMetadata to be publicly accessible. Run:
+
+```bash
+cloudflared tunnel --url http://localhost:8585
 ```
 
-> ⚠️ If using Cloudflare Tunnel, replace `OPENMETADATA_URL` with your tunnel URL:
-> ```env
-> OPENMETADATA_URL=https://your-tunnel.trycloudflare.com
-> ```
+You will get a URL like:
+```
+https://your-tunnel.trycloudflare.com
+```
+
+Keep this terminal open. You will need this URL in the next step.
 
 ---
-### Step 4 — Run the Backend
+
+### Step 4 — Configure Environment Variables
+
+Use the `.env` file provided in the repo and fill in your Cloudflare URL:
+
+```env
+OPENMETADATA_URL=https://your-tunnel.trycloudflare.com
+```
+
+> ⚠️ Every time you restart Cloudflare Tunnel, you get a new URL. Update your `.env` each time.
+
+---
+
+### Step 5 — Run the Backend
 
 ```bash
 npm run backend
 ```
 
-To expose it publicly via ngrok:
+In a new terminal, expose it via ngrok:
 
 ```bash
 ngrok http 8080
 ```
 
-Copy the forwarding URL and update your `vercel.json`:
+You will get a URL like:
+```
+https://your-ngrok-url.ngrok-free.app
+```
+
+Update your `vercel.json` with this URL:
 
 ```json
 {
@@ -124,19 +158,67 @@ Copy the forwarding URL and update your `vercel.json`:
 }
 ```
 
-> ⚠️ Replace `your-ngrok-url.ngrok-free.app` with your actual ngrok forwarding URL each time you restart ngrok.
+> ⚠️ Every time you restart ngrok, you get a new URL. Update `vercel.json` each time.
 
-### Step 5 — Run Sentari
+---
 
-```Login https://sentari.vercel.app/
+### Step 6 — Open Sentari
+
+Login at [https://sentari.vercel.app](https://sentari.vercel.app)
+
+---
+
+### 🔁 Every Time You Start Sentari
+
+Run these in order:
+
+```bash
+# 1. Start OpenMetadata
+docker compose up -d
+
+# 2. Start Cloudflare Tunnel (new terminal)
+cloudflared tunnel --url http://localhost:8585
+
+# 3. Start backend (new terminal)
+npm run backend
+
+# 4. Start ngrok (new terminal)
+ngrok http 8080
 ```
 
----
-
-
+Then update `.env` with the new Cloudflare URL and `vercel.json` with the new ngrok URL.
 
 ---
 
+## 🏗️ Architecture
+
+```
+src/
+├── cli.ts                          # CLI entry point (audit, delegate, certify)
+├── api/
+│   └── openmetadata.ts             # OpenMetadata REST API client
+└── evaluator/
+    ├── policyEvaluator.ts          # Governance policy checks
+    ├── certificationEvaluator.ts   # Access certification logic
+    └── delegationEvaluator.ts      # Ownership delegation rules
+```
+
+## 🔍 What It Detects
+
+| Check | Severity | Description |
+|---|---|---|
+| `DENY_POLICY_SCOPE_MISMATCH` | 🔴 HIGH | isOwner() DENY rules that don't apply to child resources |
+| `ADMIN_ONLY_OWNER` | 🔴 HIGH | Assets owned only by admin — governance risk |
+| `NO_OWNER` | 🔴 HIGH | Assets with no owner — policies will never match |
+| `NO_TEAM_OWNER` | 🟡 MEDIUM | Assets owned by individuals, not teams |
+| `EMPTY_POLICY` | 🟢 LOW | Policies with no rules defined |
+
+## 💡 Inspiration
+
+Built on enterprise IAM patterns from SailPoint IIQ:
+- **SOD Policies** → policy conflict detection
+- **Access Certifications** → periodic ownership review
+- **Role Mining** → delegation rule engine
 
 ## 🏆 Built For
 
