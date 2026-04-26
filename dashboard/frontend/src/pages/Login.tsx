@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
+import { API_URL } from "../config";
 
 export default function Login() {
   const [email, setEmail] = useState("admin@open-metadata.org");
@@ -15,7 +16,7 @@ export default function Login() {
     setLoading(true);
     setError("");
     try {
-      const res = await axios.post("/api/login", { email, password });
+      const res = await axios.post(`${API_URL}/api/login`, { email, password });
       if (res.data.success) {
         login(res.data.token, email);
         navigate("/dashboard");
@@ -43,7 +44,6 @@ export default function Login() {
         width: "400px",
         boxShadow: "0 25px 50px rgba(0,0,0,0.5)",
       }}>
-        {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
           <div style={{ fontSize: "48px", marginBottom: "8px" }}>🛡️</div>
           <h1 style={{
@@ -58,7 +58,6 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Form */}
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div>
             <label style={{ fontSize: "12px", color: "#718096", marginBottom: "6px", display: "block" }}>
