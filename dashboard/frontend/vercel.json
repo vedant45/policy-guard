@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://sentari.onrender.com/api/:path*"
+      "destination": "https://chump-kangaroo-blast.ngrok-free.dev/api/:path*"
     },
     {
       "source": "/(.*)",
