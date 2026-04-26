@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://chen-needle-complete-troops.trycloudflare.com/api/:path*"
+      "destination": "https://chump-kangaroo-blast.ngrok-free.dev/api/:path*"
     },
     {
       "source": "/ws",
-      "destination": "https://chen-needle-complete-troops.trycloudflare.com/ws"
+      "destination": "https://chump-kangaroo-blast.ngrok-free.dev/ws"
     },
     {
       "source": "/(.*)",
