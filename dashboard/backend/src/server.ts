@@ -18,7 +18,7 @@ app.use(cors({
     "https://sentari.vercel.app",
     "http://localhost:3000",
     "http://localhost:5173",
-    "https://chump-kangaroo-blast.ngrok-free.dev"
+    
   ],
   credentials: true,
 }));
